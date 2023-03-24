@@ -1,6 +1,7 @@
 <!doctype html>
   <html>
     <head>
+      <script src="https://cdn.bootcdn.net/ajax/libs/axios/1.2.2/axios.js"></script>
       <link rel="stylesheet" href="node_modules/xterm/css/xterm.css" />
       <script src="node_modules/xterm/lib/xterm.js"></script>
       <style>
@@ -10,21 +11,21 @@
       </style>
     </head>
     <body>
+      <div id="nr"></div>
+      <script>
+        let nr = document.getElementById('nr')
+        axios({
+            method: 'POST',
+            url: 'http://127.0.0.1:8086/terminal',
+            params: {
+                input_str:"ipconfig\r"
+            }
+        }).then(response =>{
+            nr.innerHTML = response;
+        })
+      </script>
       <div id="terminal"></div>
       <script>
-        var term = new Terminal();
-        term.open(document.getElementById('terminal'));
-        
-        term.write(chunk, () => {
-        // do something when finished processing `chunk`
-        });
-
-        pty.onData(chunk => {
-            pty.pause();
-            term.write(chunk, () => {
-                pty.resume();
-            });
-        });
       </script>
     </body>
   </html>

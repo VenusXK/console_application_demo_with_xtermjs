@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/VenusXK/Remote-Experimental-Environment#readme",
   "dependencies": {
+    "express-ws": "^5.0.2",
     "nan": "^2.17.0",
     "node-gyp": "^9.3.1",
     "node-loader": "^2.0.0",
