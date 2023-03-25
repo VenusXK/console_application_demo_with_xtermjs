@@ -1,100 +1,127 @@
 
 // 调包
 const express = require('express');
+const expressWs = require('express-ws')
 const os = require("os");
-const pty = require("./node-pty");
- 
-// 定义变量 实例化
-const shell = os.platform() === "win32" ? "powershell.exe" : "bash";
-const term = pty.spawn(shell, [], {
-    name: "xterm-color",
-    cols: 80,
-    rows: 24,
-    cwd: process.env.HOME,
-    env: process.env,
-  });
-
+const pty = require("node-pty");
+const TERMINAL_PORT=8086
 const app = express()
-
-app.all('/terminal', (Request, Response)=>{
-    Response.setHeader('Access-Control-Allow-Origin', '*');
-    Response.setHeader('Access-Control-Allow-Headers', '*');
-    Response.setHeader('Access-Control-Request-Headers',"");
-    Response.setHeader('Access-Control-Request-Method','*');
-    // const data = Request.data;
-    // console.log(Request.query.input_str)
-
-    term.write(Request.query.input_str)
-
-    let res = "res:";
-    let count = 0;
-    term.onData((response_data) => {
-      term.pause();
-      // console.log(typeof(response_data))
-      // console.log()
-
-      // if(response_data == undefined){
-      //   console.log("undefined");
-      // }
-      // else{
-      //   console.log("defined");
-      // }
-      count++
-      console.log(count);
-      
-      res += response_data;
-      term.resume();
-      // console.log(res);
-      // console.log(response_data);
-    //   // process.stdout
-    //   // console.log(process.stdout)
-    //   // process.stdout.write(data1);
-    //   // process.stdout.write(data);
-    });
-
-    //console.log("res_out:"+res);
-    Response.send(res);
-    // res = "";
+const terminals = {}, logs = {}
+const USE_BINARY = os.platform() !== "win32";
 
 
-    //term.resize(100, 40);
+expressWs(app);
 
-    // term.on("data", function(data) {
-    //   console.log(data);
-    //   Response.send(data);
-    // });
-
-    // Response.send(JSON.stringify(data));
-})
-app.listen(8086, ()=>{
-    console.log('8086 running node-pty')
+//设置允许跨域访问该服务.
+app.all('*', function (req, res, next) {
+  res.header('Access-Control-Allow-Origin', '*')
+  res.header('Access-Control-Allow-Headers', 'Content-Type')
+  res.header('Access-Control-Allow-Methods', '*')
+  res.header('Content-Type', 'application/json;charset=utf-8')
+  next()
 })
 
+app.post('/terminals', (req, res) => {
+  // 把进程变量复制过来
+  const env = Object.assign({}, process.env)
+  // 解析传入参数的长、宽高
+  // let cols = parseInt(req.query.cols),
+      // rows = parseInt(req.query.rows),
+      // 通过pty初始化terminal
+  let term = pty.spawn(process.platform === 'win32' ? 'cmd.exe' : 'bash', [], {
+          name: 'xterm-256color',
+          cols: 80,
+          rows: 24,
+          cwd: env.PWD,
+          env: env,
+          encoding: 'utf8'
+      })
+  // 输出创建的终端id
+  console.log('Created terminal with PID: ' + term.pid)
+  // 将终端加入终端池
+  terminals[term.pid] = term
+  // 创建记录交互信息的存储值
+  logs[term.pid] = ''
+  // 将终端返回的数据记录到存储内容内
+  term.onData(function (data) {
+      logs[term.pid] += data
+  })
+  // 向前端发送终端的id
+  res.send(term.pid.toString())
+  // res.send("hello")
+  res.end()
+})
 
-// const express = require("express");
-// const expressWs = require("express-ws");
+app.ws('/terminals/:pid', function (ws, req) {
+  const term = terminals[parseInt(req.params.pid)]
+  console.log('Connected to terminal ' + term.pid)
+  ws.send(logs[term.pid])
 
-// const app = express();
-// expressWs(app);
+  const send = USE_BINARY ? bufferUtf8(ws, 5) : buffer(ws, 5);
 
-// const pty = require("./node-pty");
-// const os = require("os");
-// const shell = os.platform() === "win32" ? "powershell.exe" : "bash";
-// const term = pty.spawn(shell, ["--login"], {
-//   name: "xterm-color",
-//   cols: 80,
-//   rows: 24,
-//   cwd: process.env.HOME,
-//   env: process.env,
-// });
-// app.ws("/socket", (ws, req) => {
-//   term.on("data", function (data) {
-//     ws.send(data);
-//   });
-//   ws.on("message", (data) => {
-//     term.write(data);
-//   });
-//   ws.on("close", function () {
-//     term.kill();
-//   });
-// });
+
+  term.on('data', function (data) {
+      try {
+          send(data);
+      } catch (ex) {
+          // The WebSocket is not open, ignore
+      }
+  })
+
+  ws.on('message', function (msg) {
+      term.write(msg);
+  })
+
+
+  ws.on('close', function () {
+      term.kill();
+      console.log('Closed terminal ' + term.pid);
+      // Clean things up
+      delete terminals[term.pid];
+      delete logs[term.pid];
+  })
+
+})
+
+app.listen(TERMINAL_PORT);
+console.log('App listening to http://127.0.0.1:' + TERMINAL_PORT);
+console.log("wss linsting on " + TERMINAL_PORT)
+
+
+// string message buffering
+function buffer(socket, timeout) {
+  let s = ''
+  let sender = null
+  return (data) => {
+      s += data
+      if (!sender) {
+          sender = setTimeout(() => {
+              socket.send(s)
+              s = ''
+              sender = null
+          }, timeout)
+      }
+  }
+}
+
+// binary message buffering
+function bufferUtf8(socket, timeout) {
+  let buffer = []
+  let sender = null
+  let length = 0
+  return (data) => {
+      buffer.push(data)
+      length += data.length
+      if (!sender) {
+          sender = setTimeout(() => {
+              socket.send(Buffer.concat(buffer, length))
+              buffer = []
+              sender = null
+              length = 0
+          }, timeout)
+      }
+  }
+}
+
+// 监听端口
+

@@ -1,9 +1,15 @@
+<script>
+  const URL = "127.0.0.1";
+  const TERMINAL_PORT = "8086"
+  // const TERMINAL_PORT = "4000"
+</script>
 <!doctype html>
   <html>
     <head>
       <script src="https://cdn.bootcdn.net/ajax/libs/axios/1.2.2/axios.js"></script>
       <link rel="stylesheet" href="node_modules/xterm/css/xterm.css" />
       <script src="node_modules/xterm/lib/xterm.js"></script>
+      <script src="node_modules\xterm-addon-attach\lib\xterm-addon-attach.js"></script>
       <style>
         body{
             background: black;
@@ -11,21 +17,34 @@
       </style>
     </head>
     <body>
-      <div id="nr"></div>
-      <script>
-        let nr = document.getElementById('nr')
-        axios({
-            method: 'POST',
-            url: 'http://127.0.0.1:8086/terminal',
-            params: {
-                input_str:"ipconfig\r"
-            }
-        }).then(response =>{
-            nr.innerHTML = response;
-        })
-      </script>
       <div id="terminal"></div>
+      <div id="content" style="color:white"></div>
       <script>
+        var pid = ''
+        // xterm官网实例
+        // 创建terminal对象
+        var term = new Terminal();
+        // open对应id内容
+        term.open(document.getElementById('terminal'));
+        // 写入初始信息
+        // term.write('请稍后\x1B[1;32m正在创建连接终端中\x1B[0m $ ')
+        fetch('http://'+URL+":"+TERMINAL_PORT+"/"+"terminals",{method:"POST"})
+        .then((response)=>response.text(response))
+        .then((response)=>{
+          // term.write();
+          console.log(response)
+          let content = document.getElementById('content');
+            let socket = new WebSocket('ws://'+URL+":"+TERMINAL_PORT+"/"+"terminals"+"/"+response);
+            console.log(socket.readyState);
+
+            socket.onopen = function(){
+              console.log(socket.readyState);
+            }
+
+            const attachAddon  = new AttachAddon.AttachAddon(socket);
+            term.loadAddon(attachAddon)
+
+        });
       </script>
     </body>
   </html>
