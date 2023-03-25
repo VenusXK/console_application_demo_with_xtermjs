@@ -1,6 +1,6 @@
 <script>
   const URL = "127.0.0.1";
-  const TERMINAL_PORT = "8086"
+  const TERMINAL_PORT = "8086";
   // const TERMINAL_PORT = "4000"
 </script>
 <!doctype html>
@@ -14,11 +14,19 @@
         body{
             background: black;
         }
+
       </style>
     </head>
     <body>
-      <div id="terminal"></div>
+      
+
+      
+      <div id="terminal" style="width:800px; margin:auto;margin-top: 10%;border-radius: 0px;overflow: hidden;background: black;border:10px solid black;"></div>
       <div id="content" style="color:white"></div>
+      <!-- <div id="starfield" style="position: absolute;">
+        <canvas></canvas>
+      </div> -->
+      
       <script>
         var pid = ''
         // xterm官网实例
@@ -26,6 +34,12 @@
         var term = new Terminal();
         // open对应id内容
         term.open(document.getElementById('terminal'));
+        let terchildchild = document.getElementById('terminal').firstChild.firstChild;
+        let terchild = document.getElementById('terminal');
+        console.log(terchild.style);
+        terchildchild.style.overflowY = "hidden";
+        terchild.style.overflow = "hidden";
+        terchild.style.zIndex = 10;
         // 写入初始信息
         // term.write('请稍后\x1B[1;32m正在创建连接终端中\x1B[0m $ ')
         fetch('http://'+URL+":"+TERMINAL_PORT+"/"+"terminals",{method:"POST"})
@@ -48,3 +62,4 @@
       </script>
     </body>
   </html>
+
