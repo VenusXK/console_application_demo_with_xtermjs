@@ -4,7 +4,7 @@
 <img src="./pic/webshell.png" width=60%>
 </div>
 
-Using Xterm.js to control the terminal on remote VPS
+<br>
 
 ### 演示Demo
 
