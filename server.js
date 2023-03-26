@@ -8,8 +8,11 @@ const TERMINAL_PORT=8086
 const app = express()
 const terminals = {}, logs = {}
 
-// 当为win32时，返回false，表示不使用二进制模式
+// win执行下面这条：当为win32时，返回false，表示不使用二进制模式
 const USE_BINARY = os.platform() !== "win32";
+
+// linux执行下面这条：当为win32时，返回false，表示不使用二进制模式
+// const USE_BINARY = os.platform() !== "linux"
 
 // express升级为websocket-express
 expressWs(app);
