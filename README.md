@@ -1,6 +1,6 @@
 # Remote-Experimental-Environment
 
-<div align=center>
+<div align=center style="border-radius:20px;">
 <img src="./pic/webshell16_9.png" width=60%>
 </div>
 
