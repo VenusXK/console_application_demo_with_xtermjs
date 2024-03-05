@@ -1,14 +1,9 @@
-# Remote-Experimental-Environment
 
 <div align=center style="border-radius:20px;">
 <img src="./pic/webshell16_9.png" width=60%>
 </div>
 
 <br>
-
-### 演示Demo
-
-http://www.venusxk.com/Console/
 
 
 ### 依赖 dependencies
